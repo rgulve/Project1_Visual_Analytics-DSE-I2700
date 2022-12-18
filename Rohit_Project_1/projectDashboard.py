@@ -4,13 +4,16 @@ import pycountry
 import plotly.express as px
 import plotly.graph_objects as go
 
-data = pd.read_csv("merged_data.csv")
+data = pd.read_csv("VaccineBreakout_1.csv")
 print(data.head())
 
 app = Dash()
 
-geo_dropdown = dcc.Dropdown(options=data['Vaccine_Manufacturer'].unique(),
-                            value='Pfizer/BioNTech')
+Vaccine_dropdown = dcc.Dropdown(options=data['Vaccine_Manufacturer'].unique(),
+                                value='Pfizer/BioNTech')
+
+Country_dropdown = dcc.Dropdown(options=data['Country'].unique(),
+                                value='Argentina')
 
 # app.layout = html.Div(children=[
 #     html.H1(children='Vaccine Administrated Globally'),
@@ -22,41 +25,51 @@ geo_dropdown = dcc.Dropdown(options=data['Vaccine_Manufacturer'].unique(),
 
 app.layout = html.Div(children=[
     html.Div([
-        html.H1(children='Treemap'),
-        dcc.Graph(
-            id='graph2',
-        ),
+        html.H1(children='Bubble Chart'),
+        dcc.Graph(id='graph3'),
+        dcc.Graph(id='graph1')
+
     ]),
-    # elements from the top of the page
+
     html.Div([
         html.H1(children='Vaccine Administrated Globally'),
-        geo_dropdown,
+        Vaccine_dropdown,
         dcc.Graph(
             id='graph1',
         ),
     ]),
-    # New Div for all elements in the new 'row' of the page
 
     html.Div([
-        html.H1(children='Bubble Chart'),
         dcc.Graph(
-            id='graph3',
+            id='graph2',
         ),
     ]),
+
     html.Div([
-        html.H1(children='Bar Chart'),
+        html.H1(children='Covid-19 Vaccine breakout for different types of variants'),
+        dcc.Graph(
+            id='graph5',
+        ),
+    ]),
+
+    html.Div([
+        html.H1(children='Covid-19 Vaccine Efficacy for different types of Vaccines'),
+        Country_dropdown,
         dcc.Graph(
             id='graph4',
         ),
     ]),
+
 ])
 
 
 @app.callback(
-    [Output('graph1', 'figure'), Output('graph2', 'figure'), Output('graph3', 'figure'), Output('graph4', 'figure')],
-    Input(component_id=geo_dropdown, component_property='value')
+    [Output('graph1', 'figure'), Output('graph2', 'figure'), Output('graph3', 'figure'), Output('graph4', 'figure'),
+     Output('graph5', 'figure')],
+    Input(component_id=Vaccine_dropdown, component_property='value'),
+    Input(component_id=Country_dropdown, component_property='value')
 )
-def update_graph(selected_geography):
+def update_graph(selected_geography, selected_country):
     df1_grouped = data.groupby('Vaccine_Manufacturer')
     vaccine_group = df1_grouped.get_group(selected_geography)
     list_countries = vaccine_group['Country'].unique().tolist()
@@ -92,41 +105,42 @@ def update_graph(selected_geography):
     )
     fig_1.update_traces(root_color="lightgrey")
 
-    total = data.groupby(['Country', 'Vaccine_Manufacturer'])["Total_Vaccinations"].sum().rename(
-        "Total_sum").reset_index()
-    df_1 = data.merge(total)
-    gk_1 = df_1.groupby('Vaccine_Manufacturer')
+    gk_1 = data.groupby('Vaccine_Manufacturer')
     Oxford = gk_1.get_group(selected_geography)
-    fig_2 = px.scatter(Oxford, x='Country', y='Total_sum', size='Total_sum', color="Country",
+    fig_2 = px.scatter(Oxford, x='Country', y='Total_Vaccinations', size='Total_Vaccinations', color="Country",
                        hover_name="Vaccine_Manufacturer", size_max=70)
-    df = data.query("Country=='Argentina'")
 
-    colors = ['lightslategray', ] * 5
-    colors[1] = 'crimson'
+    df = data[data["Country"] == selected_country]
 
     fig_3 = go.Figure()
 
-    fig_3.add_trace(go.Bar(data_frame=df, x='Date', y='Susceptible_BreakOut_for_Omicorn_Infection',
-                           name='Susceptible BreakOut for Omicorn Infection'))
+    fig_3.add_trace(
+        go.Bar(x=df['Vaccine_Manufacturer'], y=df['Omicron_Infection_Efficacy'], name='Omicorn_Infection_Efficacy'))
 
-    fig_3.add_trace(go.Bar(x='Date', y='Susceptible_BreakOut_for_Omicorn_Severe_Disease',
-                           name='Susceptible BreakOut for Omicorn Severe Disease'))
+    fig_3.add_trace(go.Bar(x=df['Vaccine_Manufacturer'], y=df['Alpha_Ancestral_Infection_Efficacy'],
+                           name='Alpha_Ancestral_Infection_Efficacy'))
 
-    fig_3.add_trace(go.Bar(x='Date', y='Susceptible_BreakOut_for_Alpha_Ancestral_Severe_Disease',
-                           name='Susceptible BreakOut for Alpha Ancestral Severe Disease'))
+    fig_3.add_trace(go.Bar(x=df['Vaccine_Manufacturer'], y=df['Beta_Gamma_Delta_Infection_Efficacy'],
+                           name='Beta_Gamma_Delta_Infection_Efficacy'))
 
-    fig_3.add_trace(go.Bar(x='Date', y='Susceptible_BreakOut_for_Alpha_Ancestral_Infection',
+    fig_3.update_layout(title_text='Variant wise Vaccine Efficacy in {}'.format(selected_country))
+
+    df.drop_duplicates(subset=['Country'], inplace=True)
+
+    fig_4 = go.Figure()
+
+    fig_4.add_trace(go.Bar(x=df['Country'], y=df['Susceptible_BreakOut_for_Omicron_Infection'],
+                           name='Susceptible BreakOut for Omicron Infection'))
+
+    fig_4.add_trace(go.Bar(x=df['Country'], y=df['Susceptible_BreakOut_for_Alpha_Ancestral_Infection'],
                            name='Susceptible BreakOut for Alpha Ancestral Infection'))
 
-    fig_3.add_trace(go.Bar(x='Date', y='Susceptible_BreakOut_for_Beta_Gamma_Delta_Severe_Disease',
-                           name='Susceptible BreakOut for Beta Gamma Delta Severe Disease'))
-
-    fig_3.add_trace(go.Bar(x='Date', y='Susceptible_BreakOut_for_Beta_Gamma_Delta_Infection',
+    fig_4.add_trace(go.Bar(x=df['Country'], y=df['Susceptible_BreakOut_for_Beta_Gamma_Delta_Infection'],
                            name='Susceptible BreakOut for Beta Gamma Delta Infection'))
 
-    fig_3.update_layout(title_text='Susceptible BreakOut in Argentina')
+    fig_4.update_layout(title_text='Susceptible BreakOut in {}'.format(selected_country))
 
-    return fig, fig_1, fig_2, fig_3
+    return fig, fig_1, fig_2, fig_3, fig_4
 
 
 if __name__ == '__main__':
