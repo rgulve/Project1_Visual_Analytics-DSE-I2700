@@ -104,8 +104,12 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, className
         'color': colors['text']}),
         dcc.Markdown(suggestions_text_header, style={'color': 'white'}),
         dcc.Markdown('''
-        Encourage individuals who have been vaccinated to receive their second/third vaccination as required.
-        *Suggestion #2
+        1. Encourage individuals who have been vaccinated to receive their second/third vaccination as required. \n
+        2. Ensure patients who already received vaccination to receive the future ones up to date. \n
+        3. If a patient exhibits symptoms then they should remain isolated to prevent increasing vaccine infection rates. \n
+        4. Seek immediate treatment (or within first couple days) if showing clear symptoms. \n
+        5. Continue wearing masks at least 6 feet away from other individuals. \n
+        6. Improve ventilation in order to reduce infection rates.
         ''', style={'color': 'white'}),
     ]),
     # html.Div([
@@ -179,7 +183,7 @@ def update_graph(selected_geography, selected_country):
     fig_3 = go.Figure()
 
     fig_3.add_trace(
-        go.Bar(x=df['Vaccine_Manufacturer'], y=df['Omicron_Infection_Efficacy'], name='Omicorn_Infection_Efficacy'))
+        go.Bar(x=df['Vaccine_Manufacturer'], y=df['Omicron_Infection_Efficacy'], name='Omicron_Infection_Efficacy'))
 
     fig_3.add_trace(go.Bar(x=df['Vaccine_Manufacturer'], y=df['Alpha_Ancestral_Infection_Efficacy'],
                            name='Alpha_Ancestral_Infection_Efficacy'))
@@ -204,6 +208,7 @@ def update_graph(selected_geography, selected_country):
                            name='Susceptible BreakOut for Beta Gamma Delta Infection'))
 
     fig_4.update_layout(title_text='Susceptible BreakOut in {}'.format(selected_country), template='plotly_dark')
+
 
     return fig, fig_1, fig_2, fig_3, fig_4
 
